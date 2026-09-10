@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: career-postgres
+    environment:
+      POSTGRES_USER: career_user
+      POSTGRES_PASSWORD: career_password
+      POSTGRES_DB: career_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U career_user -d career_platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: career-backend
+    environment:
+      DB_HOST: postgres
+      DB_USER: career_user
+      DB_PASSWORD: career_password
+      DB_NAME: career_platform
+      DB_PORT: 5432
+      JWT_SECRET: career-platform-dev-secret-2026
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: http://localhost:8080/api/v1
+    container_name: career-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
