@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  backend-test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: career_user
+          POSTGRES_PASSWORD: career_password
+          POSTGRES_DB: career_platform
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U career_user -d career_platform"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.27.1"
+
+      - name: Install dependencies
+        working-directory: backend
+        run: go mod download
+
+      - name: Run backend tests
+        working-directory: backend
+        env:
+          DB_HOST: localhost
+          DB_USER: career_user
+          DB_PASSWORD: career_password
+          DB_NAME: career_platform
+          DB_PORT: 5432
+          JWT_SECRET: ci-test-secret
+        run: go test ./...
+
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run frontend tests
+        working-directory: frontend
+        run: npm test -- --run
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
