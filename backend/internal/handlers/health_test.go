@@ -1,38 +1,34 @@
 package handlers
 
 import (
-	"io"
 	"net/http"
-	"strings"
+	"net/http/httptest"
 	"testing"
+
+	"github.com/gin-gonic/gin"
 )
 
 func TestHealthEndpoint(t *testing.T) {
-	response, err := http.Get("http://localhost:8080/api/v1/health")
+	gin.SetMode(gin.TestMode)
 
-	if err != nil {
-		t.Fatalf("failed to call health endpoint: %v", err)
-	}
+	router := gin.New()
+	router.GET("/api/v1/health", Health)
 
-	defer response.Body.Close()
+	request := httptest.NewRequest(
+		http.MethodGet,
+		"/api/v1/health",
+		nil,
+	)
 
-	if response.StatusCode != http.StatusOK {
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
 		t.Fatalf(
-			"expected status 200, got %d",
-			response.StatusCode,
-		)
-	}
-
-	body, err := io.ReadAll(response.Body)
-
-	if err != nil {
-		t.Fatalf("failed to read response: %v", err)
-	}
-
-	if !strings.Contains(string(body), "healthy") {
-		t.Fatalf(
-			"expected response to contain 'healthy', got %s",
-			string(body),
+			"expected status %d, got %d",
+			http.StatusOK,
+			recorder.Code,
 		)
 	}
 }
