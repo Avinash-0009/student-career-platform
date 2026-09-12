@@ -97,10 +97,14 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  
 
   docker-security:
-    name: Build and Scan Docker Images
+    name: Build, Scan and Push Docker Images
     runs-on: ubuntu-latest
     needs:
       - sonar
+
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout repository
@@ -132,5 +136,31 @@ jobs:
           format: table
           exit-code: '1'
           ignore-unfixed: true
-          severity: CRITICAL,HIGH                 
-  
+          severity: CRITICAL,HIGH
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::451867464323:role/GitHubActions-ECR-StudentCareer
+          aws-region: ap-south-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Tag Docker images
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          docker tag career-backend:${{ github.sha }} \
+            $REGISTRY/student-career-backend:${{ github.sha }}
+
+          docker tag career-frontend:${{ github.sha }} \
+            $REGISTRY/student-career-frontend:${{ github.sha }}
+
+      - name: Push Docker images
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          docker push $REGISTRY/student-career-backend:${{ github.sha }}
+          docker push $REGISTRY/student-career-frontend:${{ github.sha }}
