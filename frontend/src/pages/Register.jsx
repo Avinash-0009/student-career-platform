@@ -1,31 +1,36 @@
 import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import { useAuth } from "../context/AuthContext"
+import { useNavigate, Link } from "react-router-dom"
 import { api } from "../services/api"
 
-function Login() {
+function Register() {
+  const navigate = useNavigate()
+
+  const [name, setName] = useState("")
+  const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [message, setMessage] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  const navigate = useNavigate()
-  const { login } = useAuth()
-
-  const handleLogin = async (event) => {
+  const handleRegister = async (event) => {
     event.preventDefault()
     setMessage("")
+    setLoading(true)
 
     try {
-      const data = await api.post("/auth/login", {
+      await api.post("/auth/register", {
+        name,
+        username,
         email,
         password,
       })
 
-      login(data.token)
-      navigate("/dashboard")
+      navigate("/login")
     } catch (error) {
       console.error(error)
-      setMessage(error.message || "Login failed")
+      setMessage(error.message || "Registration failed")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -33,7 +38,6 @@ function Login() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
 
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm">
             <span className="text-xl font-bold">C</span>
@@ -44,20 +48,19 @@ function Login() {
           </h1>
 
           <p className="mt-2 text-sm text-slate-500">
-            Sign in to manage your career progress.
+            Create your student career account.
           </p>
         </div>
 
-        {/* Login Card */}
         <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-6 sm:p-8">
 
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-slate-900">
-              Welcome back
+              Create account
             </h2>
 
             <p className="mt-1 text-sm text-slate-500">
-              Enter your credentials to continue.
+              Enter your details to get started.
             </p>
           </div>
 
@@ -70,9 +73,48 @@ function Login() {
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleRegister} className="space-y-5">
 
-            {/* Email */}
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5"
+              >
+                Full Name
+              </label>
+
+              <input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Avinash Jogi"
+                autoComplete="name"
+                required
+                className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="username"
+                className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5"
+              >
+                Username
+              </label>
+
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                placeholder="avinash"
+                autoComplete="username"
+                required
+                className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
+
             <div>
               <label
                 htmlFor="email"
@@ -93,7 +135,6 @@ function Login() {
               />
             </div>
 
-            {/* Password */}
             <div>
               <label
                 htmlFor="password"
@@ -107,35 +148,33 @@ function Login() {
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="Enter your password"
-                autoComplete="current-password"
+                placeholder="Create a password"
+                autoComplete="new-password"
+                minLength={8}
                 required
                 className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              disabled={loading}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
-              Login
+              {loading ? "Creating Account..." : "Create Account"}
             </button>
-            <p className="mt-6 text-center text-sm text-slate-500">
-  Don't have an account?{" "}
-  <Link
-    to="/register"
-    className="font-medium text-indigo-600 hover:text-indigo-700"
-  >
-    Register
-  </Link>
-</p>
 
           </form>
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
-          Manage your projects, skills, and job applications in one place.
+        <p className="mt-6 text-center text-sm text-slate-500">
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            className="font-medium text-indigo-600 hover:text-indigo-700"
+          >
+            Login
+          </Link>
         </p>
 
       </div>
@@ -143,4 +182,4 @@ function Login() {
   )
 }
 
-export default Login
+export default Register

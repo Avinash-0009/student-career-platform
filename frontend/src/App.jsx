@@ -13,6 +13,7 @@ import Profile from "./pages/Profile"
 import Projects from "./pages/Projects"
 import Skills from "./pages/Skills"
 import Applications from "./pages/Applications"
+import Register from "./pages/Register"
 
 import Layout from "./components/Layout"
 
@@ -31,6 +32,14 @@ function App() {
               : <Login />
           }
         />
+        <Route
+  path="/register"
+  element={
+    isLoggedIn
+      ? <Navigate to="/dashboard" />
+      : <Register />
+  }
+/>
 
         <Route
           element={
