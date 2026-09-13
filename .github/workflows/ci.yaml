@@ -164,3 +164,50 @@ jobs:
         run: |
           docker push $REGISTRY/student-career-backend:${{ github.sha }}
           docker push $REGISTRY/student-career-frontend:${{ github.sha }}
+  deploy:
+    name: Deploy to EKS
+    runs-on: ubuntu-latest
+    needs:
+      - docker-security
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::451867464323:role/GitHubActions-EKS-Deploy-StudentCareer
+          aws-region: ap-south-1
+
+      - name: Configure kubectl
+        run: |
+          aws eks update-kubeconfig \
+            --region ap-south-1 \
+            --name student-career-eks
+
+      - name: Deploy backend
+        run: |
+          kubectl set image deployment/backend \
+            backend=451867464323.dkr.ecr.ap-south-1.amazonaws.com/student-career-backend:${{ github.sha }} \
+            -n student-career
+
+      - name: Deploy frontend
+        run: |
+          kubectl set image deployment/frontend \
+            frontend=451867464323.dkr.ecr.ap-south-1.amazonaws.com/student-career-frontend:${{ github.sha }} \
+            -n student-career
+
+      - name: Wait for backend rollout
+        run: |
+          kubectl rollout status deployment/backend \
+            -n student-career \
+            --timeout=180s
+
+      - name: Wait for frontend rollout
+        run: |
+          kubectl rollout status deployment/frontend \
+            -n student-career \
+            --timeout=180s

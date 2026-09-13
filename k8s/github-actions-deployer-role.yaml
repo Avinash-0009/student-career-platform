@@ -1,0 +1,22 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: github-actions-deployer
+  namespace: student-career
+rules:
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - deployments/status
+    verbs:
+      - get
+      - list
+      - patch
+      - update
+
+  - apiGroups: [""]
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
