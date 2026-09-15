@@ -31,12 +31,16 @@ module "eks" {
       instance_types = ["t3.small"]
 
       min_size     = 1
-      max_size     = 2
-      desired_size = 1
+      max_size     = 3
+      desired_size = 2
 
       capacity_type = "ON_DEMAND"
 
       subnet_ids = module.vpc.private_subnets
+      tags = {
+        "k8s.io/cluster-autoscaler/enabled"            = "true"
+        "k8s.io/cluster-autoscaler/student-career-eks" = "owned"
+      }
     }
   }
 
