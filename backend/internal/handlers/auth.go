@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/crypto/bcrypt"
 
 	"student-career-platform/internal/database"
@@ -41,12 +43,22 @@ func Register(c *gin.Context) {
 	}
 
 	result := database.DB.Create(&user)
-
+	
 	if result.Error != nil {
+		var pgErr *pgconn.PgError
+
+		if errors.As(result.Error, &pgErr) && pgErr.Code == "23505" {
+			c.JSON(http.StatusConflict, gin.H{
+				"error": "username or email already exists",
+			})
+			return
+		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "failed to create user",
 		})
 		return
+
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
