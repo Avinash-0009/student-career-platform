@@ -41,10 +41,76 @@ prometheus:
         cpu: 300m
         memory: 512Mi
 
+
 alertmanager:
   enabled: true
 
+  config:
+    global:
+      resolve_timeout: 5m
+      smtp_smarthost: smtp.gmail.com:587
+      smtp_from: studentcareer.alerts@gmail.com
+      smtp_auth_username: studentcareer.alerts@gmail.com
+      smtp_require_tls: true
+
+    inhibit_rules:
+      - equal:
+          - namespace
+          - alertname
+        source_matchers:
+          - severity = critical
+        target_matchers:
+          - severity =~ warning|info
+
+      - equal:
+          - namespace
+          - alertname
+        source_matchers:
+          - severity = warning
+        target_matchers:
+          - severity = info
+
+      - equal:
+          - namespace
+        source_matchers:
+          - alertname = InfoInhibitor
+        target_matchers:
+          - severity = info
+
+      - target_matchers:
+          - alertname = InfoInhibitor
+
+    route:
+      group_by:
+        - namespace
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+      receiver: "null"
+
+      routes:
+        - matchers:
+            - alertname =~ "BackendDown|PostgreSQLDown|NodeNotReady|HighNodeCPU|BackendPodRestarting|BackendHPAMaxReplicas"
+          receiver: "student-career-email"
+
+        - matchers:
+            - alertname = "Watchdog"
+          receiver: "null"
+
+    receivers:
+      - name: "null"
+
+      - name: "student-career-email"
+        email_configs:
+          - to: 2005avinashjogi@gmail.com
+            auth_username: studentcareer.alerts@gmail.com
+            auth_password_file: /etc/alertmanager/secrets/student-career-smtp/smtp-password
+            send_resolved: true
+
   alertmanagerSpec:
+    secrets:
+      - student-career-smtp
+
     resources:
       requests:
         cpu: 25m
@@ -52,18 +118,3 @@ alertmanager:
       limits:
         cpu: 100m
         memory: 128Mi
-
-kubeStateMetrics:
-  enabled: true
-
-nodeExporter:
-  enabled: true
-
-prometheusOperator:
-  resources:
-    requests:
-      cpu: 25m
-      memory: 64Mi
-    limits:
-      cpu: 100m
-      memory: 128Mi

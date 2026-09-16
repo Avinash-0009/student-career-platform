@@ -1,0 +1,97 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: student-career-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: student-career-platform
+      rules:
+
+        - alert: BackendDown
+          expr: |
+            kube_deployment_status_replicas_available{
+              namespace="student-career",
+              deployment="backend"
+            } < 1
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Backend is unavailable"
+            description: "The student-career backend deployment has no available replicas."
+
+        - alert: PostgreSQLDown
+          expr: |
+            kube_deployment_status_replicas_available{
+              namespace="student-career",
+              deployment="postgres"
+            } < 1
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "PostgreSQL is unavailable"
+            description: "The PostgreSQL deployment has no available replicas."
+
+        - alert: NodeNotReady
+          expr: |
+            kube_node_status_condition{
+              condition="Ready",
+              status="true"
+            } == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Kubernetes node is not ready"
+            description: "A Kubernetes node has been NotReady for more than 5 minutes."
+
+        - alert: HighNodeCPU
+          expr: |
+            100 * (
+              1 - avg by(instance) (
+                rate(node_cpu_seconds_total{mode="idle"}[5m])
+              )
+            ) > 80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High node CPU usage"
+            description: "A Kubernetes node has CPU usage above 80% for more than 5 minutes."
+
+        - alert: BackendPodRestarting
+          expr: |
+            increase(
+              kube_pod_container_status_restarts_total{
+                namespace="student-career",
+                pod=~"backend-.*"
+              }[10m]
+            ) > 2
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Backend pod is repeatedly restarting"
+            description: "A backend pod restarted more than twice within the last 10 minutes."
+
+        - alert: BackendHPAMaxReplicas
+          expr: |
+            kube_horizontalpodautoscaler_status_current_replicas{
+              namespace="student-career",
+              horizontalpodautoscaler="backend-hpa"
+            }
+            >=
+            kube_horizontalpodautoscaler_spec_max_replicas{
+              namespace="student-career",
+              horizontalpodautoscaler="backend-hpa"
+            }
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Backend HPA is at maximum replicas"
+            description: "The backend HPA has been running at its maximum replica count for more than 5 minutes."
