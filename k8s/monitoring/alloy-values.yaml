@@ -1,0 +1,51 @@
+controller:
+  type: deployment
+  replicas: 1
+
+alloy:
+  configMap:
+    create: true
+    content: |
+      logging {
+        level  = "info"
+        format = "logfmt"
+      }
+
+      discovery.kubernetes "pods" {
+        role = "pod"
+      }
+
+      loki.source.kubernetes "pods" {
+        targets    = discovery.kubernetes.pods.targets
+        forward_to = [loki.process.pods.receiver]
+      }
+
+      loki.process "pods" {
+        forward_to = [loki.write.loki.receiver]
+
+        stage.static_labels {
+          values = {
+            cluster = "student-career-eks",
+          }
+        }
+      }
+
+      loki.write "loki" {
+        endpoint {
+          url = "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+        }
+      }
+
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+serviceAccount:
+  create: true
+
+rbac:
+  create: true
