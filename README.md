@@ -2,7 +2,7 @@
 
 A student career tracking platform where students manually log and manage their skill progress, projects, job applications, and profile — all in one dashboard. Built as a hands-on project to learn production-style DevOps practices: CI/CD, container security scanning, Kubernetes orchestration, infrastructure as code, and observability.
 
-> **Live status:** Currently deployed on AWS EKS.
+> **Live status:** Previously deployed on AWS EKS; infrastructure was destroyed after final verification to avoid ongoing AWS costs.
 
 ---
 
